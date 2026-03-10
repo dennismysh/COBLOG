@@ -7,6 +7,7 @@ on:
       - 'posts/**'
       - 'src/**'
       - 'static/**'
+      - '.github/workflows/**'
       - 'Makefile'
       - 'Cargo.toml'
       - 'build.sh'
@@ -50,9 +51,10 @@ jobs:
       - name: Build and generate site
         run: |
           chmod +x build.sh
-          BASE_URL="${{ vars.BASE_URL || 'https://example.com' }}" ./build.sh
+          ./build.sh
         env:
-          BASE_URL: ${{ vars.BASE_URL }}
+          BASE_URL: ${{ vars.BASE_URL || format('https://{0}.github.io/{1}', github.repository_owner, github.event.repository.name) }}
+          BASE_PATH: /${{ github.event.repository.name }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
