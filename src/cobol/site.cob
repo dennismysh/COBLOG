@@ -56,6 +56,17 @@
        01 WS-INDEX-OPEN        PIC 9  VALUE 0.
        01 WS-PREV-SLUG         PIC X(60) VALUE SPACES.
 
+      * Index entry buffer (max 200 posts)
+       01 WS-INDEX-TABLE.
+           05 WS-INDEX-ENTRY OCCURS 200 TIMES.
+               10 WS-IDX-SLUG     PIC X(60).
+               10 WS-IDX-TITLE    PIC X(120).
+               10 WS-IDX-DATE     PIC X(10).
+               10 WS-IDX-AUTHOR   PIC X(40).
+               10 WS-IDX-TAG      PIC X(30).
+               10 WS-IDX-DESC     PIC X(160).
+       01 WS-IDX-I              PIC 999 VALUE 0.
+
       * HTML fragments
        01 WS-LINE              PIC X(4096) VALUE SPACES.
        01 WS-TRIMMED-TITLE     PIC X(120) VALUE SPACES.
@@ -99,17 +110,13 @@
                PERFORM CLOSE-POST-PAGE
            END-IF
 
-      * Close any open section on index
-           IF WS-IN-SECTION = 1
-               PERFORM WRITE-INDEX-SECTION-CLOSE
-           END-IF
-
-      * Close index page if open
-           IF WS-INDEX-OPEN = 1
-               PERFORM CLOSE-INDEX-PAGE
-           END-IF
-
            CLOSE INPUT-FILE
+
+      * Now generate the index page from buffered entries
+           IF WS-POST-COUNT > 0
+               PERFORM GENERATE-INDEX-PAGE
+           END-IF
+
            STOP RUN.
 
        READ-AND-GENERATE.
@@ -155,8 +162,8 @@
                END-IF
       * Start new post page
                PERFORM OPEN-POST-PAGE
-      * Add to index
-               PERFORM ADD-TO-INDEX
+      * Buffer index entry for later
+               PERFORM BUFFER-INDEX-ENTRY
                MOVE WS-TRIMMED-SLUG TO WS-CURRENT-SLUG
            END-IF
 
@@ -164,6 +171,24 @@
            IF WS-TRIMMED-BODY NOT = SPACES
                MOVE WS-TRIMMED-BODY TO OUTPUT-RECORD
                WRITE OUTPUT-RECORD
+           END-IF.
+
+       BUFFER-INDEX-ENTRY.
+      * Store index data in table for deferred index generation
+           ADD 1 TO WS-POST-COUNT
+           IF WS-POST-COUNT <= 200
+               MOVE WS-TRIMMED-SLUG TO
+                   WS-IDX-SLUG(WS-POST-COUNT)
+               MOVE WS-TRIMMED-TITLE TO
+                   WS-IDX-TITLE(WS-POST-COUNT)
+               MOVE WS-DISP-DATE TO
+                   WS-IDX-DATE(WS-POST-COUNT)
+               MOVE WS-TRIMMED-AUTHOR TO
+                   WS-IDX-AUTHOR(WS-POST-COUNT)
+               MOVE WS-TRIMMED-TAG TO
+                   WS-IDX-TAG(WS-POST-COUNT)
+               MOVE WS-TRIMMED-DESC TO
+                   WS-IDX-DESC(WS-POST-COUNT)
            END-IF.
 
        OPEN-POST-PAGE.
@@ -339,44 +364,8 @@
            CLOSE OUTPUT-FILE
            MOVE 0 TO WS-IN-POST.
 
-       ADD-TO-INDEX.
-      * Open index page if not yet open
-           IF WS-INDEX-OPEN = 0
-               PERFORM OPEN-INDEX-PAGE
-           END-IF
-
-      * Control break on tag - close old section, open new
-           IF WS-TRIMMED-TAG NOT = WS-CURRENT-TAG
-               IF WS-IN-SECTION = 1
-                   PERFORM WRITE-INDEX-SECTION-CLOSE
-               END-IF
-               PERFORM WRITE-INDEX-SECTION-OPEN
-               MOVE WS-TRIMMED-TAG TO WS-CURRENT-TAG
-           END-IF
-
-      * Write index entry (DETAIL equivalent)
-           STRING "<article class='post-preview'>"
-               "<h3><a href='/"
-               FUNCTION TRIM(WS-TRIMMED-SLUG)
-               "/'>"
-               FUNCTION TRIM(WS-TRIMMED-TITLE)
-               "</a></h3>"
-               "<div class='meta'><time>"
-               FUNCTION TRIM(WS-DISP-DATE)
-               "</time> &middot; "
-               FUNCTION TRIM(WS-TRIMMED-AUTHOR)
-               "</div>"
-               "<p>"
-               FUNCTION TRIM(WS-TRIMMED-DESC)
-               "</p></article>"
-               DELIMITED SIZE INTO WS-LINE
-           MOVE WS-LINE TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
-
-           ADD 1 TO WS-POST-COUNT.
-
-       OPEN-INDEX-PAGE.
-      * Create index output
+       GENERATE-INDEX-PAGE.
+      * Write the index page after all post pages are closed
            STRING
                "mkdir -p "
                FUNCTION TRIM(WS-OUTPUT-DIR)
@@ -393,86 +382,114 @@
 
       * Index page HTML head
            MOVE "<!DOCTYPE html>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "<html lang='en'>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "<head>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "<meta charset='utf-8'>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            STRING "<meta name='viewport' content="
                "'width=device-width, initial-scale=1'>"
                DELIMITED SIZE INTO WS-LINE
            MOVE WS-LINE TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "<title>COBLOG</title>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            STRING "<meta name='description' content="
                "'A blog powered by COBOL Report Writer'>"
                DELIMITED SIZE INTO WS-LINE
            MOVE WS-LINE TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            STRING "<link rel='alternate' type='application/rss+xml'"
                " title='COBLOG RSS' href='/feed.xml'>"
                DELIMITED SIZE INTO WS-LINE
            MOVE WS-LINE TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            STRING "<link rel='stylesheet' href='/style.css'>"
                DELIMITED SIZE INTO WS-LINE
            MOVE WS-LINE TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "</head>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "<body>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "<header>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "<nav><a href='/'>COBLOG</a></nav>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "</header>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "<main>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE.
+           WRITE OUTPUT-RECORD
 
-       CLOSE-INDEX-PAGE.
+      * Write buffered index entries with tag control breaks
+           MOVE SPACES TO WS-CURRENT-TAG
+           MOVE 0 TO WS-IN-SECTION
+           PERFORM VARYING WS-IDX-I FROM 1 BY 1
+               UNTIL WS-IDX-I > WS-POST-COUNT
+               PERFORM WRITE-BUFFERED-INDEX-ENTRY
+           END-PERFORM
+
+      * Close last tag section if open
+           IF WS-IN-SECTION = 1
+               MOVE "</section>" TO OUTPUT-RECORD
+               WRITE OUTPUT-RECORD
+               MOVE 0 TO WS-IN-SECTION
+           END-IF
+
+      * Close index page
            MOVE "</main>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "<footer>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            STRING "<p>Generated by COBLOG &mdash; "
                "a COBOL Report Writer static site engine</p>"
                DELIMITED SIZE INTO WS-LINE
            MOVE WS-LINE TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "</footer>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "</body>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            MOVE "</html>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
+           WRITE OUTPUT-RECORD
            CLOSE OUTPUT-FILE
            MOVE 0 TO WS-INDEX-OPEN.
 
-       WRITE-INDEX-SECTION-OPEN.
-      * Control Heading - tag section
-           STRING "<section class='tag-group'>"
-               "<h2>"
-               FUNCTION TRIM(WS-TRIMMED-TAG)
-               "</h2>"
+       WRITE-BUFFERED-INDEX-ENTRY.
+      * Control break on tag
+           IF WS-IDX-TAG(WS-IDX-I) NOT = WS-CURRENT-TAG
+               IF WS-IN-SECTION = 1
+                   MOVE "</section>" TO OUTPUT-RECORD
+                   WRITE OUTPUT-RECORD
+               END-IF
+               STRING "<section class='tag-group'>"
+                   "<h2>"
+                   FUNCTION TRIM(WS-IDX-TAG(WS-IDX-I))
+                   "</h2>"
+                   DELIMITED SIZE INTO WS-LINE
+               MOVE WS-LINE TO OUTPUT-RECORD
+               WRITE OUTPUT-RECORD
+               MOVE 1 TO WS-IN-SECTION
+               MOVE WS-IDX-TAG(WS-IDX-I) TO WS-CURRENT-TAG
+           END-IF
+
+      * Write index entry
+           STRING "<article class='post-preview'>"
+               "<h3><a href='/"
+               FUNCTION TRIM(WS-IDX-SLUG(WS-IDX-I))
+               "/'>"
+               FUNCTION TRIM(WS-IDX-TITLE(WS-IDX-I))
+               "</a></h3>"
+               "<div class='meta'><time>"
+               FUNCTION TRIM(WS-IDX-DATE(WS-IDX-I))
+               "</time> &middot; "
+               FUNCTION TRIM(WS-IDX-AUTHOR(WS-IDX-I))
+               "</div>"
+               "<p>"
+               FUNCTION TRIM(WS-IDX-DESC(WS-IDX-I))
+               "</p></article>"
                DELIMITED SIZE INTO WS-LINE
            MOVE WS-LINE TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
-           MOVE 1 TO WS-IN-SECTION.
-
-       WRITE-INDEX-SECTION-CLOSE.
-      * Control Footing - close tag section
-           MOVE "</section>" TO OUTPUT-RECORD
-           PERFORM WRITE-INDEX-LINE
-           MOVE 0 TO WS-IN-SECTION.
-
-       WRITE-INDEX-LINE.
-      * Helper to handle index page output through the same FD.
-      * Since COBOL can only have one file open per FD at a time,
-      * the index uses the same OUTPUT-FILE when post page is closed.
-      * This works because we buffer index writes.
            WRITE OUTPUT-RECORD.
