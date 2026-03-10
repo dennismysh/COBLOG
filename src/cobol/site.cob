@@ -85,6 +85,9 @@
        01 WS-MONTH             PIC X(2)   VALUE SPACES.
        01 WS-DAY               PIC X(2)   VALUE SPACES.
 
+      * Base path for deployment (e.g. /COBLOG for project pages)
+       01 WS-BASE-PATH         PIC X(64) VALUE SPACES.
+
       * Command line
        01 WS-ARGS              PIC X(256) VALUE SPACES.
        01 WS-MKDIR-CMD         PIC X(512) VALUE SPACES.
@@ -95,6 +98,8 @@
            IF WS-OUTPUT-DIR = SPACES
                MOVE "./out" TO WS-OUTPUT-DIR
            END-IF
+
+           ACCEPT WS-BASE-PATH FROM ENVIRONMENT "BASE_PATH"
 
            OPEN INPUT INPUT-FILE
            IF WS-INPUT-STATUS NOT = "00"
@@ -282,13 +287,17 @@
 
       * RSS discovery
            STRING "<link rel='alternate' type='application/rss+xml'"
-               " title='COBLOG RSS' href='/feed.xml'>"
+               " title='COBLOG RSS' href='"
+               FUNCTION TRIM(WS-BASE-PATH)
+               "/feed.xml'>"
                DELIMITED SIZE INTO WS-LINE
            MOVE WS-LINE TO OUTPUT-RECORD
            WRITE OUTPUT-RECORD
 
       * CSS
-           STRING "<link rel='stylesheet' href='/style.css'>"
+           STRING "<link rel='stylesheet' href='"
+               FUNCTION TRIM(WS-BASE-PATH)
+               "/style.css'>"
                DELIMITED SIZE INTO WS-LINE
            MOVE WS-LINE TO OUTPUT-RECORD
            WRITE OUTPUT-RECORD
@@ -309,7 +318,11 @@
       * Page header
            MOVE "<header>" TO OUTPUT-RECORD
            WRITE OUTPUT-RECORD
-           MOVE "<nav><a href='/'>COBLOG</a></nav>" TO OUTPUT-RECORD
+           STRING "<nav><a href='"
+               FUNCTION TRIM(WS-BASE-PATH)
+               "/'>COBLOG</a></nav>"
+               DELIMITED SIZE INTO WS-LINE
+           MOVE WS-LINE TO OUTPUT-RECORD
            WRITE OUTPUT-RECORD
            MOVE "</header>" TO OUTPUT-RECORD
            WRITE OUTPUT-RECORD
@@ -402,11 +415,15 @@
            MOVE WS-LINE TO OUTPUT-RECORD
            WRITE OUTPUT-RECORD
            STRING "<link rel='alternate' type='application/rss+xml'"
-               " title='COBLOG RSS' href='/feed.xml'>"
+               " title='COBLOG RSS' href='"
+               FUNCTION TRIM(WS-BASE-PATH)
+               "/feed.xml'>"
                DELIMITED SIZE INTO WS-LINE
            MOVE WS-LINE TO OUTPUT-RECORD
            WRITE OUTPUT-RECORD
-           STRING "<link rel='stylesheet' href='/style.css'>"
+           STRING "<link rel='stylesheet' href='"
+               FUNCTION TRIM(WS-BASE-PATH)
+               "/style.css'>"
                DELIMITED SIZE INTO WS-LINE
            MOVE WS-LINE TO OUTPUT-RECORD
            WRITE OUTPUT-RECORD
@@ -416,7 +433,11 @@
            WRITE OUTPUT-RECORD
            MOVE "<header>" TO OUTPUT-RECORD
            WRITE OUTPUT-RECORD
-           MOVE "<nav><a href='/'>COBLOG</a></nav>" TO OUTPUT-RECORD
+           STRING "<nav><a href='"
+               FUNCTION TRIM(WS-BASE-PATH)
+               "/'>COBLOG</a></nav>"
+               DELIMITED SIZE INTO WS-LINE
+           MOVE WS-LINE TO OUTPUT-RECORD
            WRITE OUTPUT-RECORD
            MOVE "</header>" TO OUTPUT-RECORD
            WRITE OUTPUT-RECORD
@@ -477,7 +498,9 @@
 
       * Write index entry
            STRING "<article class='post-preview'>"
-               "<h3><a href='/"
+               "<h3><a href='"
+               FUNCTION TRIM(WS-BASE-PATH)
+               "/"
                FUNCTION TRIM(WS-IDX-SLUG(WS-IDX-I))
                "/'>"
                FUNCTION TRIM(WS-IDX-TITLE(WS-IDX-I))
