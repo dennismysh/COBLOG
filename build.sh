@@ -48,6 +48,13 @@ BASE_URL="$BASE_URL" "$MDPREP" "$POSTS_DIR" | ./bin/sitemap > "$OUT_DIR/sitemap.
 # Copy static assets
 cp -r static/* "$OUT_DIR/" 2>/dev/null || true
 
+# Generate robots.txt with correct sitemap URL
+cat > "$OUT_DIR/robots.txt" <<ROBOTS
+User-agent: *
+Allow: /
+Sitemap: ${BASE_URL}/sitemap.xml
+ROBOTS
+
 echo ""
 echo "=== Build complete ==="
 echo "Site generated in $OUT_DIR/"
