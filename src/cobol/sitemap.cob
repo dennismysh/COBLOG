@@ -100,16 +100,19 @@
            MOVE WS-TRIMMED-DATE(1:4) TO WS-YEAR
            MOVE WS-TRIMMED-DATE(5:2) TO WS-MONTH
            MOVE WS-TRIMMED-DATE(7:2) TO WS-DAY
+           MOVE SPACES TO WS-ISO-DATE
            STRING WS-YEAR "-" WS-MONTH "-" WS-DAY
                DELIMITED SIZE INTO WS-ISO-DATE
 
       * Detail - emit one <url> block
            DISPLAY "  <url>"
+           MOVE SPACES TO WS-LINE
            STRING "    <loc>"
                FUNCTION TRIM(WS-TRIMMED-CANONICAL)
                "</loc>"
                DELIMITED SIZE INTO WS-LINE
            DISPLAY FUNCTION TRIM(WS-LINE)
+           MOVE SPACES TO WS-LINE
            STRING "    <lastmod>"
                FUNCTION TRIM(WS-ISO-DATE)
                "</lastmod>"

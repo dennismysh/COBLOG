@@ -135,31 +135,37 @@
 
       * Emit item (Detail equivalent)
            DISPLAY "    <item>"
+           MOVE SPACES TO WS-LINE
            STRING "      <title>"
                FUNCTION TRIM(WS-TRIMMED-TITLE)
                "</title>"
                DELIMITED SIZE INTO WS-LINE
            DISPLAY FUNCTION TRIM(WS-LINE)
+           MOVE SPACES TO WS-LINE
            STRING "      <link>"
                FUNCTION TRIM(WS-TRIMMED-CANONICAL)
                "</link>"
                DELIMITED SIZE INTO WS-LINE
            DISPLAY FUNCTION TRIM(WS-LINE)
+           MOVE SPACES TO WS-LINE
            STRING "      <description>"
                FUNCTION TRIM(WS-TRIMMED-DESC)
                "</description>"
                DELIMITED SIZE INTO WS-LINE
            DISPLAY FUNCTION TRIM(WS-LINE)
+           MOVE SPACES TO WS-LINE
            STRING "      <author>"
                FUNCTION TRIM(WS-TRIMMED-AUTHOR)
                "</author>"
                DELIMITED SIZE INTO WS-LINE
            DISPLAY FUNCTION TRIM(WS-LINE)
+           MOVE SPACES TO WS-LINE
            STRING "      <guid>"
                FUNCTION TRIM(WS-TRIMMED-CANONICAL)
                "</guid>"
                DELIMITED SIZE INTO WS-LINE
            DISPLAY FUNCTION TRIM(WS-LINE)
+           MOVE SPACES TO WS-LINE
            STRING "      <pubDate>"
                FUNCTION TRIM(WS-RFC-DATE)
                "</pubDate>"
@@ -194,6 +200,7 @@
                WHEN OTHER MOVE "Jan" TO WS-MONTH-NAME
            END-EVALUATE
 
+           MOVE SPACES TO WS-RFC-DATE
            STRING WS-DAY " "
                WS-MONTH-NAME " "
                WS-YEAR " 00:00:00 GMT"
