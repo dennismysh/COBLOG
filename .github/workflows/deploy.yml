@@ -3,14 +3,6 @@ name: Build and Deploy COBLOG
 on:
   push:
     branches: [main]
-    paths:
-      - 'posts/**'
-      - 'src/**'
-      - 'static/**'
-      - '.github/workflows/**'
-      - 'Makefile'
-      - 'Cargo.toml'
-      - 'build.sh'
   workflow_dispatch:
 
 permissions:
